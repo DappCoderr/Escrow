@@ -10,13 +10,25 @@ contract Escrow{
     enum State{Created, Locked, Released, InDispute};
     State public state;
 
-    emit Approved(uint);
+    event FundReleased(address indexed receiver, uint amount);
+    event FundDeposited(address indexed payer, uint amount ) 
 
     constructor(address payable _receiver, address _arbiter){
         payer = msg.sender;
         receiver = _receiver;
         arbiter = _arbiter;
         state = State.Created;
+    }
+
+    modifier notInState(State _state) {
+        require(state != _state, "Invalid state");
+        _;
+    }
+
+    function deposit() payable external notInState(State.Locked){
+        require(msg.sender == payer);
+        emit FundDeposited(payer, msg.value)
+        state = State.Locked;
     }
 
     function release() external payable{
@@ -26,6 +38,6 @@ contract Escrow{
         require(sent, "Failed to send ether");
         isApproved = true;
         state = State.Released;
-        emit Approved(balance);
+        emit FundReleased(receiver, balance);
     }
 }
